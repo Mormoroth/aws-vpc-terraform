@@ -90,3 +90,17 @@ resource "aws_route_table_association" "Private_Subnet_2_Association" {
   route_table_id = aws_route_table.Private-Route-Table.id
   subnet_id      = aws_subnet.Private-Subnet-2.id
 }
+
+resource "aws_internet_gateway" "vpc_igw" {
+  vpc_id = aws_vpc.kubernetes_cluster_vpc.id
+
+  tags = {
+    "Name" = "VPC-IGW"
+  }
+}
+
+resource "aws_route" "vpc_igw_route" {
+  route_table_id         = aws_route_table.Public-Route-Table.id
+  gateway_id             = aws_internet_gateway.vpc_igw.id
+  destination_cidr_block = "0.0.0.0/0"
+}

@@ -104,3 +104,65 @@ resource "aws_route" "vpc_igw_route" {
   gateway_id             = aws_internet_gateway.vpc_igw.id
   destination_cidr_block = "0.0.0.0/0"
 }
+
+data "aws_ami" "amazon-linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm*"]
+  }
+}
+
+resource "aws_key_pair" "ssh_key" {
+  key_name   = "morteza"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC6FD3ip8rSv4GqUBeGjcx5mGAWlL0h/bcWb335Mzyyb0pfhGlaNgh9ALBmD3cJWGde4jtQ90QUE2lH5vThNv+BwV7pXiibTCaZxhELQdDaED4XROTyC+++WspHL2US24OW1et2n0cZvQue1QGKnN9M2BQpA+aSCiZCx/Qb9vJTlblY2g/FHv2lmVkDxdC5K3tmeiBOq7iwH5qtAupqGU5ohQ85XSVh7biRfb9CaoKnrmlsjvglZV/EmN1ZtjoplnEiBf6w0SqEyLKOMjCStmw4aURq1F7ziD9nxHB6pPvrM5TGI3QjNN83243gRQNvYbiQW4NLKxjlAZgbdrzJP+P5 mormoroth"
+
+}
+
+resource "aws_security_group" "ec2-sg" {
+  name   = "EC2-SG"
+  vpc_id = aws_vpc.kubernetes_cluster_vpc.id
+
+  ingress = [{
+    cidr_blocks      = ["0.0.0.0/0"]
+    description      = "SG-IN"
+    from_port        = 0
+    ipv6_cidr_blocks = []
+    prefix_list_ids  = []
+    protocol         = -1
+    security_groups  = []
+    self             = false
+    to_port          = 0
+  }]
+
+  egress = [{
+    cidr_blocks      = ["0.0.0.0/0"]
+    description      = "SG-OUT"
+    from_port        = 0
+    ipv6_cidr_blocks = []
+    prefix_list_ids  = []
+    protocol         = -1
+    self             = false
+    security_groups  = []
+    to_port          = 0
+  }]
+
+}
+
+resource "aws_instance" "public-ec2-instance" {
+  ami             = data.aws_ami.amazon-linux.id
+  instance_type   = var.ec2_instance_type
+  key_name        = aws_key_pair.ssh_key.key_name
+  subnet_id       = aws_subnet.Public-Subnet-1.id
+  security_groups = [aws_security_group.ec2-sg.id]
+}
+
+resource "aws_instance" "private-ec2-instance" {
+  ami             = data.aws_ami.amazon-linux.id
+  instance_type   = var.ec2_instance_type
+  key_name        = aws_key_pair.ssh_key.key_name
+  subnet_id       = aws_subnet.Private-Subnet-1.id
+  security_groups = [aws_security_group.ec2-sg.id]
+}
